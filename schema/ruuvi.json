@@ -1,0 +1,40 @@
+{
+   "$schema": "http://json-schema.org/draft-04/schema#",
+   "title": "System Event",
+   "description": "Generic defination for system event",
+   "type": "object",
+
+   "properties": {
+      "sensor":{
+         "type": "string",
+         "minLength": 1,
+         "maxLength": 255
+       },
+      "temperature": {
+        "type":"number",
+        "minimum": -127.99,
+        "maximum": 127.99
+      },
+      "identifier":{
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 255
+      },
+      "data_format": {
+        "type":"integer"
+      },
+      "humidity":{
+        "type":"number",
+        "minimum": 0,
+        "maximum": 100
+      },
+      "pressure":{
+        "type":"number",
+        "minimum": 800,
+        "maximum": 1200
+      }
+
+   },
+
+   "required": ["temperature","identifier","data_format","humidity","pressure"]
+}
