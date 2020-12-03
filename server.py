@@ -6,6 +6,8 @@ Usage::
 """
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import logging
+from collector import Collector
+import json
 
 
 class S(SimpleHTTPRequestHandler):
@@ -15,12 +17,16 @@ class S(SimpleHTTPRequestHandler):
         path = self.path
 
         if path == '/sensor':
-            file = open("./data/data.json", "r")
-            data = file.read()
+            c = Collector.getClient()
+            latest = c.get_latest()
+            values = []
+            for key, value in latest.items():
+                values.append(value)
+            d = {'values': values}
+            json_data = json.dumps(d)
+            self.set_rsp_header(len(json_data))
 
-            self.set_rsp_header(len(data))
-
-            self.wfile.write(data.encode('utf-8'))
+            self.wfile.write(json_data.encode('utf-8'))
 
         else:
             self.send_response(404)
@@ -36,8 +42,8 @@ class S(SimpleHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        file = open("../data/data.json", "r")
-        data = file.read()
+
+        data = "{\"hui\":\"hai\"}"
 
         self.set_rsp_header(len(data))
 
@@ -58,6 +64,9 @@ def run(server_class=HTTPServer, handler_class=S, port=8080):
     httpd = server_class(server_address, handler_class)
     logging.info('Starting httpd...\n')
     try:
+        Collector.CreateCollector()
+        c = Collector.getClient()
+        c.start()
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
