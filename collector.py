@@ -2,9 +2,21 @@
 from ruuvitag_sensor.ruuvi import RuuviTagSensor
 import threading
 import time
+import datetime
 
 
 class Collector(threading.Thread):
+
+    _client = None
+
+    @staticmethod
+    def CreateCollector():
+        Collector._client = Collector()
+
+    @staticmethod
+    def getClient():
+        return Collector._client
+
     def __init__(self):
         threading.Thread.__init__(self)
         self.data = {}
@@ -13,7 +25,11 @@ class Collector(threading.Thread):
         return self.data
 
     def handle_data(self, found_data):
-        self.data[found_data[0]] = found_data[1]
+        item = {'id': found_data[0],
+                'data': found_data[1],
+                'timestamp': datetime.datetime.utcnow().isoformat()
+                }
+        self.data[found_data[0]] = item
 
     def run(self):
         RuuviTagSensor.get_datas(self.handle_data)
