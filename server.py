@@ -16,7 +16,7 @@ class S(SimpleHTTPRequestHandler):
 
         path = self.path
 
-        if path == '/sensor':
+        if path == '/ruuvi/all':
             c = Collector.getClient()
             latest = c.get_latest()
             values = []
@@ -34,20 +34,30 @@ class S(SimpleHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
-        content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
-        post_data = self.rfile.read(content_length) # <--- Gets the data itself
+        content_length = int(self.headers['Content-Length'])   # <--- Gets the size of data
+        post_data = self.rfile.read(content_length)   # <--- Gets the data itself
+        path = self.path
         logging.info(post_data.decode('utf-8'))
 
-        #self._set_response()
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
+        if path == '/ruuvi/sensor':
+            c = Collector.getClient()
+            reguest_json = json.loads(post_data.decode('utf-8'))
+            id = reguest_json['id']
+            try:
+                data = c.get_sensor_latest(id)
+                json_data = json.dumps(data)
+                self.set_rsp_header(len(json_data))
+                self.wfile.write(json_data.encode('utf-8'))
+            except KeyError:
+                self.send_response(409)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
 
-        data = "{\"hui\":\"hai\"}"
+        else:
+            self.send_response(404)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
 
-        self.set_rsp_header(len(data))
-
-        self.wfile.write(data.encode('utf-8'))
 
     def set_rsp_header(self, data_len):
         """ Utility to create rsp header for messages."""
