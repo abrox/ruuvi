@@ -22,7 +22,26 @@ class Collector(threading.Thread):
         self.data = {}
 
     def get_latest(self):
+        """Get lates measurements.
+        Returns:
+            Dictonary having latest measurements of the sensors.
+            Sensor MAC address is a key and value is dictonary containing
+            having timestamp, id and data. data is dictonary contain measured
+            values from sensor.
+        """
         return self.data
+
+    def get_sensor_latest(self, id):
+        """Latest measurements of single sensor.
+        Args:
+            id:
+                MAC address of the sensor.
+        Returns:
+            latest mesurment reseived from the sensor.
+        Throws:
+            KeyError in case id requested is not in a list.
+        """
+        return self.data[id]
 
     def handle_data(self, found_data):
         item = {'id': found_data[0],
