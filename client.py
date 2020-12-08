@@ -1,28 +1,47 @@
 #!/usr/bin/env python3
 import json
-from validate import validate_json
 import urllib.request
 import urllib.error
+import logging
 
-schema_file = './schema/ruuvi.json'
 
-
-def get_from_server(ip='127.0.0.1', port=8080, path='/ruuvi/all'):
+def get_latest_all_sensors(ip, port=8080, path='/ruuvi/all'):
+    """Latest measurements from all available sensors.
+    Returns:
+        tuple (rc , data)
+            When OK:
+                rc:True data having latest mesurments.
+            When Fail:
+                rc:False, data is none
+    """
+    rc = (False, None)
     url = "http://{ip}:{po}{pa}".format(ip=ip, po=port, pa=path)
     try:
         HTTP_page = urllib.request.urlopen(url, timeout=5.0)
         data = HTTP_page.read()
         json_data = json.loads(data)
-        is_valid, msg = validate_json(json_data, schema_file)
-        print(json_data, is_valid, msg)
+        rc = (True, json_data)
     except urllib.error.URLError as e:
-        print("Failed to fetch:", e)
+        logging.warning("Failed to fetch:", e)
+    return rc
 
 
-def post_to_server(id, ip='127.0.0.1', port=8080, path='/ruuvi/sensor'):
+def get_latest_single_sensor(id, ip, port=8080, path='/ruuvi/sensor'):
+    """Latest measurements from single sensor.
+    args:
+        id:
+            MAC address of the sensor.
+    Returns:
+        tuple (rc , data)
+            When OK:
+                rc:True data having latest mesurments.
+            When Fail:
+                rc:False, data is none
+    """
     url = "http://{ip}:{po}{pa}".format(ip=ip, po=port, pa=path)
     d = {'id': id}
     params = json.dumps(d).encode('utf8')
+    rc = (False, None)
     try:
         req = urllib.request.Request(url,
                                      data=params,
@@ -30,14 +49,18 @@ def post_to_server(id, ip='127.0.0.1', port=8080, path='/ruuvi/sensor'):
         response = urllib.request.urlopen(req, timeout=5.0)
         data = response.read()
         json_data = json.loads(data)
-        is_valid, msg = validate_json(json_data, schema_file)
-        print(json_data, is_valid, msg)
+        rc = (True, json_data)
     except urllib.error.URLError as e:
-        print("Failed to fetch:", e)
+        logging.warning("Failed to fetch:", e)
+    return rc
 
 
 if __name__ == '__main__':
-    #  url = 'http://192.168.66.36:8080/sensor'
-    url = 'http://127.0.0.1:8080/ruuvi/all'
-    # get_from_server(url)
-    post_to_server(id='123')
+    ip = '192.168.66.6'
+    ok, data = get_latest_all_sensors(ip=ip)
+    if ok:
+        print(data)
+
+    ok, data = get_latest_single_sensor(ip=ip, id='C7:41:2E:60:DB:EC')
+    if ok:
+        print(data)
