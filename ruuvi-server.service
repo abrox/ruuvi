@@ -1,0 +1,16 @@
+[Unit]
+Description=RuuviTagSensor server
+After=syslog.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/src/ruuvi
+#Assuming that config file is in same directory that gtw.py
+ExecStart=/home/pi/src/ruuvi/server.py
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target
