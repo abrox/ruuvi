@@ -3,6 +3,40 @@ import json
 import urllib.request
 import urllib.error
 import logging
+import calendar
+from datetime import datetime
+
+
+def to_unix_timestamp(time_str=datetime.utcnow().isoformat()):
+    '''
+     Convert date time to Unix timestamp
+     Expect following format:yyyy-mm-dd hh:mm:ss e.g.2020-01-04 20:53:00
+    '''
+    dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%f")
+
+    return int(calendar.timegm(dt.timetuple()))
+
+
+def ruuvi_to_influx_line(data, excludes=['mac']):
+
+    line = "ruuvi,"
+    line += "id=\"{id}\" ".format(id=data['id'])
+    values = data['data']
+    for key in values:
+        if key not in excludes:
+            line += "{k}={v},".format(k=key, v=values[key])
+    line = line[:-1]
+    line = "{l} {t}".format(l=line, t=to_unix_timestamp(data['timestamp']))
+    return line
+
+
+def multiline_to_influx(data):
+    sensors = data['values']
+    lines = ""
+    for sensor in sensors:
+        line = ruuvi_to_influx_line(sensor)
+        lines += "{l}\n".format(l=line)
+    return lines
 
 
 def get_latest_all_sensors(ip, port=8080, path='/ruuvi/all'):
@@ -57,10 +91,15 @@ def get_latest_single_sensor(id, ip, port=8080, path='/ruuvi/sensor'):
 
 if __name__ == '__main__':
     ip = '192.168.66.6'
+
     ok, data = get_latest_all_sensors(ip=ip)
     if ok:
-        print(data)
+        multiline_to_influx(data)
 
+"""
     ok, data = get_latest_single_sensor(ip=ip, id='C7:41:2E:60:DB:EC')
     if ok:
         print(data)
+        line = ruuvi_to_influx_line(data)
+        print(line)
+"""
