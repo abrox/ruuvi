@@ -17,10 +17,13 @@ def to_unix_timestamp(time_str=datetime.utcnow().isoformat()):
     return int(calendar.timegm(dt.timetuple()))
 
 
-def ruuvi_to_influx_line(data, excludes=['mac']):
+def ruuvi_to_influx_line(data, excludes=['mac'], tags=[]):
 
     line = "ruuvi,"
-    line += "id=\"{id}\" ".format(id=data['id'])
+    if len(tags):
+        line += ",".join(tags)
+        line += ","
+    line += "sensor={id} ".format(id=data['id'])
     values = data['data']
     for key in values:
         if key not in excludes:
@@ -51,7 +54,7 @@ def get_latest_all_sensors(ip, port=8080, path='/ruuvi/all'):
     rc = (False, None)
     url = "http://{ip}:{po}{pa}".format(ip=ip, po=port, pa=path)
     try:
-        HTTP_page = urllib.request.urlopen(url, timeout=5.0)
+        HTTP_page = urllib.request.urlopen(url, timeout=5)
         data = HTTP_page.read()
         json_data = json.loads(data)
         rc = (True, json_data)
@@ -91,15 +94,19 @@ def get_latest_single_sensor(id, ip, port=8080, path='/ruuvi/sensor'):
 
 if __name__ == '__main__':
     ip = '192.168.66.6'
-
+    """
     ok, data = get_latest_all_sensors(ip=ip)
     if ok:
-        multiline_to_influx(data)
-
-"""
+        print(data)
+        data = multiline_to_influx(data)
+        print(data)
+    else:
+        print("Failed")
+    """
     ok, data = get_latest_single_sensor(ip=ip, id='C7:41:2E:60:DB:EC')
     if ok:
         print(data)
+        line = ruuvi_to_influx_line(data,tags=["nick:daami","class:raw"])
+        print(line)
         line = ruuvi_to_influx_line(data)
         print(line)
-"""
