@@ -20,6 +20,19 @@ class Collector(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.data = {}
+        threading.Timer(1, self.update_availability).start()
+
+    def update_availability(self):
+        delete = []
+        for key, val in self.data.items():
+            val['availability'] -= 1
+
+            if val['availability'] <= 0:
+                delete.append(key)
+
+        for i in delete:
+            del self.data[i]
+        threading.Timer(1, self.update_availability).start()
 
     def get_latest(self):
         """Get lates measurements.
@@ -46,7 +59,8 @@ class Collector(threading.Thread):
     def handle_data(self, found_data):
         item = {'id': found_data[0],
                 'data': found_data[1],
-                'timestamp': datetime.datetime.utcnow().isoformat()
+                'timestamp': datetime.datetime.utcnow().isoformat(),
+                'availability': 10
                 }
         self.data[found_data[0]] = item
 
