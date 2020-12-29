@@ -3,6 +3,7 @@ from ruuvitag_sensor.ruuvi import RuuviTagSensor
 import threading
 import time
 import datetime
+import copy
 
 
 class Collector(threading.Thread):
@@ -20,18 +21,21 @@ class Collector(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.data = {}
+        self.lock = threading.RLock()
         threading.Timer(1, self.update_availability).start()
 
     def update_availability(self):
         delete = []
-        for key, val in self.data.items():
-            val['availability'] -= 1
+        with self.lock:
+            for key, val in self.data.items():
+                data = val['data']
+                data['availability'] -= 1
 
-            if val['availability'] <= 0:
-                delete.append(key)
+                if data['availability'] <= 0:
+                    delete.append(key)
 
-        for i in delete:
-            del self.data[i]
+            for i in delete:
+                del self.data[i]
         threading.Timer(1, self.update_availability).start()
 
     def get_latest(self):
@@ -42,7 +46,9 @@ class Collector(threading.Thread):
             having timestamp, id and data. data is dictonary contain measured
             values from sensor.
         """
-        return self.data
+        with self.lock:
+            data = copy.deepcopy(self.data)
+        return data
 
     def get_sensor_latest(self, id):
         """Latest measurements of single sensor.
@@ -54,15 +60,19 @@ class Collector(threading.Thread):
         Throws:
             KeyError in case id requested is not in a list.
         """
-        return self.data[id]
+        with self.lock:
+            data = copy.deepcopy(self.data[id])
+        return data
 
     def handle_data(self, found_data):
+        data = found_data[1]
+        data['availability'] = 10
         item = {'id': found_data[0],
-                'data': found_data[1],
+                'data': data,
                 'timestamp': datetime.datetime.utcnow().isoformat(),
-                'availability': 10
                 }
-        self.data[found_data[0]] = item
+        with self.lock:
+            self.data[found_data[0]] = item
 
     def run(self):
         RuuviTagSensor.get_datas(self.handle_data)
