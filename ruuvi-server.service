@@ -1,6 +1,6 @@
 [Unit]
 Description=RuuviTagSensor server
-After=syslog.target
+After=network.target
 
 [Service]
 Type=simple
@@ -11,6 +11,7 @@ WorkingDirectory=/home/pi/swprojects/ruuvi
 ExecStart=/home/pi/swprojects/ruuvi/server.py
 StandardOutput=syslog
 StandardError=syslog
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
