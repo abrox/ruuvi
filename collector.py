@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 from ruuvitag_sensor.ruuvi import RuuviTagSensor
 import threading
-import time
 import datetime
 import copy
 
 
 class Collector(threading.Thread):
-
+    """ Ruuvi data collector.
+    Read and collect data from sensors.
+    Keep up latest values, and act as a proxy between
+    ruuvi tags and web server.
+    """
     _client = None
 
     @staticmethod
@@ -25,6 +28,11 @@ class Collector(threading.Thread):
         threading.Timer(1, self.update_availability).start()
 
     def update_availability(self):
+        """ Sensor availability.
+        Keep track about sensor availability by countting
+        availability down with 1 sec timer.By following availability
+        it is possible to track connection quality.
+        """
         delete = []
         with self.lock:
             for key, val in self.data.items():
@@ -65,6 +73,9 @@ class Collector(threading.Thread):
         return data
 
     def handle_data(self, found_data):
+        """Ruuvi callback.
+        Store sensor data to dict for future use.
+        """
         data = found_data[1]
         data['availability'] = 10
         item = {'id': found_data[0],
@@ -76,25 +87,3 @@ class Collector(threading.Thread):
 
     def run(self):
         RuuviTagSensor.get_datas(self.handle_data)
-
-
-class myThread (threading.Thread):
-    def __init__(self, collector):
-        threading.Thread.__init__(self)
-        self.collector = collector
-
-    def print_result(self):
-        latest = self.collector.get_latest()
-        print(latest)
-
-    def run(self):
-        while True:
-            self.print_result()
-            time.sleep(1)
-
-
-if __name__ == '__main__':
-    c = Collector()
-    c.start()
-    th = myThread(c)
-    th.start()
