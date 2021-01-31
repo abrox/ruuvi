@@ -9,6 +9,14 @@ import logging
 from collector import Collector
 import json
 
+logger = logging.getLogger(__name__)
+
+sToLogLevel = {'debug': logging.DEBUG,
+               'info': logging.INFO,
+               'warning': logging.WARNING,
+               'error': logging.ERROR
+               }
+
 
 class S(SimpleHTTPRequestHandler):
 
@@ -37,7 +45,7 @@ class S(SimpleHTTPRequestHandler):
         content_length = int(self.headers['Content-Length'])   # <--- Gets the size of data
         post_data = self.rfile.read(content_length)   # <--- Gets the data itself
         path = self.path
-        logging.info(post_data.decode('utf-8'))
+        logger.info(post_data.decode('utf-8'))
 
         if path == '/ruuvi/sensor':
             c = Collector.getClient()
@@ -53,6 +61,21 @@ class S(SimpleHTTPRequestHandler):
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
 
+        elif path == '/ruuvi/loglevel':
+            c = Collector.getClient()
+            reguest_json = json.loads(post_data.decode('utf-8'))
+            try:
+                level = reguest_json['level']
+                # Map to correct, trow KeyError if something else
+                c.set_loglevel(sToLogLevel[level])
+                logger.setLevel(sToLogLevel[level])
+                json_data = "{\"level\":\"daa\"}"
+                self.set_rsp_header(len(json_data))
+                self.wfile.write(json_data.encode('utf-8'))
+            except KeyError:
+                self.send_response(409)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
         else:
             self.send_response(404)
             self.send_header('Content-type', 'text/html')
@@ -71,7 +94,7 @@ def run(server_class=ThreadingHTTPServer, handler_class=S, port=8080):
     logging.basicConfig(level=logging.INFO)
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
-    logging.info('Starting httpd...\n')
+    logger.info('Starting httpd...\n')
     try:
         Collector.CreateCollector()
         c = Collector.getClient()
@@ -80,7 +103,7 @@ def run(server_class=ThreadingHTTPServer, handler_class=S, port=8080):
     except KeyboardInterrupt:
         pass
     httpd.server_close()
-    logging.info('Stopping httpd...\n')
+    logger.info('Stopping httpd...\n')
 
 
 if __name__ == '__main__':

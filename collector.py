@@ -3,6 +3,9 @@ from ruuvitag_sensor.ruuvi import RuuviTagSensor
 import threading
 import datetime
 import copy
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Collector(threading.Thread):
@@ -25,7 +28,13 @@ class Collector(threading.Thread):
         threading.Thread.__init__(self)
         self.data = {}
         self.lock = threading.RLock()
+        logger.setLevel(logging.INFO)
         threading.Timer(1, self.update_availability).start()
+
+
+    def set_loglevel(self,level):
+        logger.setLevel(level)
+
 
     def update_availability(self):
         """ Sensor availability.
@@ -40,6 +49,7 @@ class Collector(threading.Thread):
                 data['availability'] -= 1
 
                 if data['availability'] <= 0:
+                    logger.warning(f"{key} Not available anymore")
                     delete.append(key)
 
             for i in delete:
@@ -82,6 +92,7 @@ class Collector(threading.Thread):
                 'data': data,
                 'timestamp': datetime.datetime.utcnow().isoformat(),
                 }
+        logger.debug(f"{item['id']} readed")
         with self.lock:
             self.data[found_data[0]] = item
 
