@@ -1,0 +1,71 @@
+openapi: '3.0.0'
+info:
+  description: 'Jukkis Ruuvari definations'
+  version: 1.0.0
+  title: Ruuvari
+  contact:
+    email: jp.sarjanen@gmail.com
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+
+tags:
+  - name: ruuvitag
+    description: Ultimate sensor for everything
+    externalDocs:
+      description: Find out more
+      url: 'https://ruuvi.com/'
+
+servers:
+- url: http://192.168.66.6:{port}/{basePath}
+  description: My Ruuvi thing
+  variables:
+    port:
+      enum:
+        - '8080'
+        - '80'
+      default: '8080'
+    basePath:
+      # open meaning there is the opportunity to use special base paths as assigned by the provider, default is `v2`
+      default: ruuvi
+
+
+paths:
+  /loglevel:
+    post:
+      summary: Setting server loglevel
+      description: 'Change current loglevel '
+      requestBody:
+        $ref: '#/components/requestBodies/loglevelBody'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+             schema:
+              $ref: '#/components/requestBodies/loglevelBody'
+        '405':
+          description: Invalid input
+components:
+  requestBodies:
+    loglevelBody:
+      description: A JSON object for reusable request body containing the details of a loglevel
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/loglevel"
+
+  schemas:
+   loglevel:
+    type: object
+    required:
+      - level
+    properties:
+      level:
+        type: string
+        enum:
+        - debug
+        - info
+        - warning
+        - error
